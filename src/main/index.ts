@@ -239,12 +239,19 @@ function applyPanelLayout(): void {
   })
 }
 
+/** Win11 + 透明无边框：避免 DWM 圆角/置顶组合在顶部画出浅色条带 */
+function refreshWin32TransparentSurface(win: BrowserWindow | null): void {
+  if (process.platform !== 'win32' || !win || win.isDestroyed()) return
+  win.setBackgroundColor('#00000000')
+}
+
 function applyAlwaysOnTop(win: BrowserWindow, pinned: boolean): void {
   if (pinned) {
-    win.setAlwaysOnTop(true, 'floating')
+    win.setAlwaysOnTop(true)
   } else {
     win.setAlwaysOnTop(false)
   }
+  refreshWin32TransparentSurface(win)
 }
 
 function setMode(mode: 'ball' | 'panel'): void {
@@ -455,7 +462,11 @@ function createWindow(): void {
      * thickFrame: false 是透明无边框窗口的推荐组合，可避免该条带。
      */
     ...(process.platform === 'win32'
-      ? { thickFrame: false, backgroundColor: '#00000000' }
+      ? {
+          thickFrame: false,
+          backgroundColor: '#00000000',
+          roundedCorners: false
+        }
       : {}),
     alwaysOnTop: alwaysOnTopPinned,
     skipTaskbar: true,
@@ -485,10 +496,7 @@ function createWindow(): void {
 
   /** 少数显卡/主题下失焦后 DWM 仍闪一条背景，强制刷新透明底 */
   const refreshWin32TransparentBg = (): void => {
-    if (process.platform !== 'win32' || !mainWindow || mainWindow.isDestroyed()) {
-      return
-    }
-    mainWindow.setBackgroundColor('#00000000')
+    refreshWin32TransparentSurface(mainWindow)
   }
 
   mainWindow.on('blur', () => {

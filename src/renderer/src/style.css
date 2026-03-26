@@ -23,6 +23,8 @@ body {
   height: 100%;
   overflow: hidden;
   background: transparent;
+  /* 避免 Win 将顶端误作可拖拽标题区而铺背景条 */
+  -webkit-app-region: no-drag;
   font-family:
     'Segoe UI',
     system-ui,
