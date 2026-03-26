@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title></title>
+  </head>
+  <body>
+    <div id="app-ball" class="ball-root hidden" aria-label="待办悬浮球">
+      <div class="ball-face">
+        <span class="ball-icon" aria-hidden="true">✓</span>
+        <span id="ball-badge" class="ball-badge hidden" title="未完成数量"
+          >0</span
+        >
+      </div>
+    </div>
+
+    <div id="app-panel" class="panel-root hidden">
+      <header class="panel-header">
+        <h1 class="panel-title">待办</h1>
+        <div class="panel-actions">
+          <button
+            type="button"
+            id="btn-pin"
+            class="btn-icon btn-pin"
+            title="切换未完成代办便签置顶"
+            aria-pressed="true"
+            aria-label="便签置顶开关"
+          >
+            <span class="btn-icon-wrap" aria-hidden="true">
+              <!-- 已置顶：实心图钉 -->
+              <svg
+                class="svg-icon pin-on"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+              >
+                <path
+                  fill="currentColor"
+                  d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"
+                />
+              </svg>
+              <!-- 未置顶：线框图钉 -->
+              <svg
+                class="svg-icon pin-off hidden"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 18v4M8 18h8" />
+                <path
+                  d="M12 2v10m0 0c-2.5 0-4.5 1.5-4.5 3.5V18h9v-2.5c0-2-2-3.5-4.5-3.5z"
+                />
+              </svg>
+            </span>
+          </button>
+          <button
+            type="button"
+            id="btn-collapse"
+            class="btn-icon btn-collapse"
+            title="最小化到悬浮球"
+            aria-label="收起为悬浮球"
+          >
+            <svg
+              class="svg-icon"
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"
+              />
+            </svg>
+          </button>
+        </div>
+      </header>
+      <div class="panel-add">
+        <input
+          id="input-new"
+          type="text"
+          maxlength="500"
+          placeholder="添加待办，回车确认"
+          autocomplete="off"
+        />
+        <button type="button" id="btn-add" class="btn-primary">添加</button>
+      </div>
+      <ul id="todo-list" class="todo-list"></ul>
+      <div id="todo-pager" class="todo-pager hidden">
+        <button type="button" id="btn-page-prev" class="btn-page">上一页</button>
+        <span id="todo-page-info" class="todo-page-info">1 / 1</span>
+        <button type="button" id="btn-page-next" class="btn-page">下一页</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

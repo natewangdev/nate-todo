@@ -1,0 +1,56 @@
+:root {
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  /* 与主窗口一致：避免 Win 在失焦/透明区画出假标题或杂色条 */
+  -webkit-app-region: no-drag;
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+.note-root {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  padding: 0 6px;
+  background: linear-gradient(135deg, #fff7c6, #ffe27a);
+  border: 1px solid rgba(180, 140, 20, 0.45);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  user-select: none;
+  cursor: grab;
+}
+
+.note-root.is-dragging {
+  cursor: grabbing;
+}
+
+.note-content {
+  font-size: 13px;
+  line-height: 1.25;
+  color: #2f2300;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
