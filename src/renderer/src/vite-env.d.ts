@@ -17,6 +17,7 @@ declare global {
       pinnedNoteDragStart: (screenX: number, screenY: number) => Promise<void>
       pinnedNoteDragMove: (screenX: number, screenY: number) => Promise<void>
       pinnedNoteDragEnd: () => Promise<void>
+      pinnedNoteSetMeasuredWidth: (widthPx: number) => Promise<void>
       persistBallPosition: () => Promise<void>
       getNotesPinEnabled: () => Promise<boolean>
       setNotesPinEnabled: (enabled: boolean) => Promise<void>

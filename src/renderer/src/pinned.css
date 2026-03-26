@@ -15,6 +15,8 @@ body {
   height: 100%;
   background: transparent;
   overflow: hidden;
+  /* 与主窗口一致：避免 Win 在失焦/透明区画出假标题或杂色条 */
+  -webkit-app-region: no-drag;
   font-family:
     'Segoe UI',
     system-ui,
@@ -23,6 +25,7 @@ body {
 }
 
 .note-root {
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   display: flex;
@@ -49,4 +52,5 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }

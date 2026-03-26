@@ -8,13 +8,42 @@ const noteContent = document.getElementById('note-content')!
 
 let todoId = ''
 let dragActive = false
+let measureRaf = 0
+
+function intrinsicNoteWidthPx(): number {
+  const rootStyle = getComputedStyle(noteRoot)
+  const pad =
+    parseFloat(rootStyle.paddingLeft) + parseFloat(rootStyle.paddingRight)
+  const border =
+    parseFloat(rootStyle.borderLeftWidth) +
+    parseFloat(rootStyle.borderRightWidth)
+  const text = noteContent.textContent ?? ''
+  if (!text) return Math.ceil(pad + border)
+  const cs = getComputedStyle(noteContent)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return Math.ceil(pad + border)
+  ctx.font = cs.font
+  return Math.ceil(ctx.measureText(text).width + pad + border)
+}
+
+function scheduleReportWidth(): void {
+  if (measureRaf) cancelAnimationFrame(measureRaf)
+  measureRaf = requestAnimationFrame(() => {
+    measureRaf = 0
+    const w = intrinsicNoteWidthPx()
+    if (w > 0) void window.nateTodo.pinnedNoteSetMeasuredWidth(w)
+  })
+}
 
 function renderTodo(todo: TodoItem | null): void {
   if (!todo) {
     noteContent.textContent = '该代办已不存在'
+    scheduleReportWidth()
     return
   }
   noteContent.textContent = todo.content
+  scheduleReportWidth()
 }
 
 function wireInteractions(): void {
@@ -67,6 +96,9 @@ async function bootstrap(): Promise<void> {
       renderTodo(todo)
     }
   })
+
+  const ro = new ResizeObserver(() => scheduleReportWidth())
+  ro.observe(noteContent)
 }
 
 void bootstrap()

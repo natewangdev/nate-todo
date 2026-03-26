@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld('nateTodo', {
   pinnedNoteDragMove: (screenX: number, screenY: number): Promise<void> =>
     ipcRenderer.invoke('pinned-note-drag-move', screenX, screenY),
   pinnedNoteDragEnd: (): Promise<void> => ipcRenderer.invoke('pinned-note-drag-end'),
+  pinnedNoteSetMeasuredWidth: (widthPx: number): Promise<void> =>
+    ipcRenderer.invoke('pinned-note-set-measured-width', widthPx),
   persistBallPosition: (): Promise<void> =>
     ipcRenderer.invoke('persist-ball-position'),
   getNotesPinEnabled: (): Promise<boolean> =>

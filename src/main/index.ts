@@ -59,12 +59,58 @@ const pinnedNoteDragState = new Map<
     startWindowY: number
   }
 >()
-const NOTE_WIDTH = 260
+const NOTE_MIN_WIDTH = 72
+const NOTE_MAX_WIDTH = 720
 const NOTE_HEIGHT = 42
 const NOTE_TOP_MARGIN = 20
 const NOTE_RIGHT_MARGIN = 0
 const NOTE_GAP_Y = 8
 const NOTE_GAP_X = 12
+
+/** 各便签窗口宽度（由渲染进程按文字测量后上报） */
+const pinnedNoteWidths = new Map<string, number>()
+
+function noteWidthForTodo(todoId: string): number {
+  const w = pinnedNoteWidths.get(todoId)
+  if (typeof w === 'number' && Number.isFinite(w)) {
+    return Math.min(NOTE_MAX_WIDTH, Math.max(NOTE_MIN_WIDTH, Math.round(w)))
+  }
+  return NOTE_MIN_WIDTH
+}
+
+function maxNoteWidthInColumn(
+  sorted: TodoItem[],
+  perColumn: number,
+  col: number
+): number {
+  let m = NOTE_MIN_WIDTH
+  for (let i = 0; i < sorted.length; i += 1) {
+    if (Math.floor(i / perColumn) === col) {
+      const id = sorted[i]?.id
+      if (id) m = Math.max(m, noteWidthForTodo(id))
+    }
+  }
+  return m
+}
+
+function noteColumnRightOffset(
+  sorted: TodoItem[],
+  perColumn: number,
+  col: number
+): number {
+  let off = NOTE_RIGHT_MARGIN
+  for (let c = 0; c < col; c += 1) {
+    off += maxNoteWidthInColumn(sorted, perColumn, c) + NOTE_GAP_X
+  }
+  return off
+}
+
+function todoIdFromPinnedNoteWindow(win: BrowserWindow): string | null {
+  for (const [id, w] of pinnedTodoWindows) {
+    if (w === win) return id
+  }
+  return null
+}
 
 function clearBlurCollapseTimer(): void {
   if (blurCollapseTimer) {
@@ -335,21 +381,32 @@ function ensurePinnedTodoWindow(todoId: string): void {
   }
 
   const { workArea, screenRight } = workAreaRightAndBounds()
-  const x = screenRight - NOTE_WIDTH - NOTE_RIGHT_MARGIN
+  const initW = noteWidthForTodo(todoId)
+  const x = screenRight - NOTE_RIGHT_MARGIN - initW
   const y = workArea.y + NOTE_TOP_MARGIN
 
   const noteWin = new BrowserWindow({
     title: '',
-    width: NOTE_WIDTH,
+    width: initW,
     height: NOTE_HEIGHT,
-    minWidth: NOTE_WIDTH,
-    maxWidth: NOTE_WIDTH,
+    minWidth: NOTE_MIN_WIDTH,
+    maxWidth: NOTE_MAX_WIDTH,
     minHeight: NOTE_HEIGHT,
     maxHeight: NOTE_HEIGHT,
     x,
     y,
     frame: false,
     transparent: true,
+    /**
+     * 与主窗口一致：无边框透明 + Win11 圆角时，失焦后客户区外沿常出现杂色条。
+     */
+    ...(process.platform === 'win32'
+      ? {
+          thickFrame: false,
+          backgroundColor: '#00000000',
+          roundedCorners: false
+        }
+      : {}),
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
@@ -369,8 +426,24 @@ function ensurePinnedTodoWindow(todoId: string): void {
   pinnedTodoWindows.set(todoId, noteWin)
   const noteSenderId = noteWin.webContents.id
 
+  noteWin.webContents.on('page-title-updated', (event) => {
+    event.preventDefault()
+    noteWin.setTitle('')
+  })
+  noteWin.webContents.once('did-finish-load', () => {
+    noteWin.setTitle('')
+  })
+
+  const refreshNoteWin32Transparent = (): void => {
+    if (process.platform !== 'win32' || noteWin.isDestroyed()) return
+    noteWin.setBackgroundColor('#00000000')
+  }
+  noteWin.on('blur', refreshNoteWin32Transparent)
+  noteWin.on('focus', refreshNoteWin32Transparent)
+
   noteWin.on('closed', () => {
     pinnedNoteDragState.delete(noteSenderId)
+    pinnedNoteWidths.delete(todoId)
     if (pinnedTodoWindows.get(todoId) === noteWin) {
       pinnedTodoWindows.delete(todoId)
     }
@@ -432,12 +505,11 @@ function syncPinnedTodoWindows(): void {
     if (pinnedNoteDragState.has(win.webContents.id)) continue
     const col = Math.floor(i / perColumn)
     const row = i % perColumn
-    const x = Math.max(
-      workArea.x,
-      screenRight - NOTE_WIDTH - NOTE_RIGHT_MARGIN - col * (NOTE_WIDTH + NOTE_GAP_X)
-    )
+    const w = noteWidthForTodo(todo.id)
+    const rightOff = noteColumnRightOffset(sorted, perColumn, col)
+    const x = Math.max(workArea.x, screenRight - rightOff - w)
     const y = workArea.y + NOTE_TOP_MARGIN + row * (NOTE_HEIGHT + NOTE_GAP_Y)
-    win.setBounds({ x, y, width: NOTE_WIDTH, height: NOTE_HEIGHT })
+    win.setBounds({ x, y, width: w, height: NOTE_HEIGHT })
   }
 }
 
@@ -678,7 +750,7 @@ app.whenReady().then(() => {
       const dy = Math.round(cursorScreenY) - state.startCursorScreenY
       const nextX = state.startWindowX + dx
       const nextY = state.startWindowY + dy
-      const w = NOTE_WIDTH
+      const w = win.getBounds().width
       const h = NOTE_HEIGHT
       const { workArea } = screen.getDisplayMatching(win.getBounds())
       const maxX = workArea.x + workArea.width - w
@@ -691,6 +763,21 @@ app.whenReady().then(() => {
 
   ipcMain.handle('pinned-note-drag-end', (event) => {
     pinnedNoteDragState.delete(event.sender.id)
+  })
+
+  ipcMain.handle('pinned-note-set-measured-width', (event, raw: unknown) => {
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win || win.isDestroyed()) return
+    const tid = todoIdFromPinnedNoteWindow(win)
+    if (!tid) return
+    const clamped = Math.min(
+      NOTE_MAX_WIDTH,
+      Math.max(NOTE_MIN_WIDTH, Math.round(raw))
+    )
+    if (pinnedNoteWidths.get(tid) === clamped) return
+    pinnedNoteWidths.set(tid, clamped)
+    syncPinnedTodoWindows()
   })
 
   ipcMain.handle('persist-ball-position', () => {
