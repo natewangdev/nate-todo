@@ -62,7 +62,8 @@ const pinnedNoteDragState = new Map<
 const NOTE_MIN_WIDTH = 72
 const NOTE_MAX_WIDTH = 720
 const NOTE_HEIGHT = 42
-const NOTE_TOP_MARGIN = 20
+/** 便签与可用区顶部的间距，避免贴近屏幕上沿时压住其他应用的标题栏/菜单条 */
+const NOTE_TOP_MARGIN = 52
 const NOTE_RIGHT_MARGIN = 0
 const NOTE_GAP_Y = 8
 const NOTE_GAP_X = 12
@@ -755,8 +756,9 @@ app.whenReady().then(() => {
       const { workArea } = screen.getDisplayMatching(win.getBounds())
       const maxX = workArea.x + workArea.width - w
       const maxY = workArea.y + workArea.height - h
+      const minY = workArea.y + NOTE_TOP_MARGIN
       const x = Math.max(workArea.x, Math.min(nextX, maxX))
-      const y = Math.max(workArea.y, Math.min(nextY, maxY))
+      const y = Math.max(minY, Math.min(nextY, maxY))
       win.setBounds({ x, y, width: w, height: h })
     }
   )
