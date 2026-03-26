@@ -27,8 +27,8 @@ body {
   height: 100%;
   display: flex;
   align-items: center;
-  border-radius: 12px;
-  padding: 0 10px;
+  border-radius: 10px;
+  padding: 0 6px;
   background: linear-gradient(135deg, #fff7c6, #ffe27a);
   border: 1px solid rgba(180, 140, 20, 0.45);
   box-shadow:
@@ -43,8 +43,8 @@ body {
 }
 
 .note-content {
-  font-size: 17px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.25;
   color: #2f2300;
   white-space: nowrap;
   overflow: hidden;

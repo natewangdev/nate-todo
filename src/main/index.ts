@@ -9,6 +9,24 @@ interface AppSettings {
   ballY?: number
   alwaysOnTopPinned?: boolean
   notesPinEnabled?: boolean
+  /** 用于一次性迁移；缺省视为 1 */
+  settingsVersion?: number
+}
+
+/** 2：主窗口默认不置顶，旧配置里保存的置顶状态不再沿用 */
+const CURRENT_SETTINGS_VERSION = 2
+
+function migrateSettingsIfNeeded(): void {
+  const s = readSettings()
+  const version = s.settingsVersion ?? 1
+  if (version >= CURRENT_SETTINGS_VERSION) return
+  const patch: Partial<AppSettings> = {
+    settingsVersion: CURRENT_SETTINGS_VERSION
+  }
+  if (version < 2) {
+    patch.alwaysOnTopPinned = false
+  }
+  writeSettings({ ...s, ...patch })
 }
 
 const BALL_SIZE = 64
@@ -42,10 +60,10 @@ const pinnedNoteDragState = new Map<
   }
 >()
 const NOTE_WIDTH = 260
-const NOTE_HEIGHT = 56
+const NOTE_HEIGHT = 42
 const NOTE_TOP_MARGIN = 20
-const NOTE_RIGHT_MARGIN = 20
-const NOTE_GAP_Y = 10
+const NOTE_RIGHT_MARGIN = 0
+const NOTE_GAP_Y = 8
 const NOTE_GAP_X = 12
 
 function clearBlurCollapseTimer(): void {
@@ -317,6 +335,10 @@ function ensurePinnedTodoWindow(todoId: string): void {
     title: '',
     width: NOTE_WIDTH,
     height: NOTE_HEIGHT,
+    minWidth: NOTE_WIDTH,
+    maxWidth: NOTE_WIDTH,
+    minHeight: NOTE_HEIGHT,
+    maxHeight: NOTE_HEIGHT,
     x,
     y,
     frame: false,
@@ -400,6 +422,7 @@ function syncPinnedTodoWindows(): void {
     const todo = sorted[i]
     const win = pinnedTodoWindows.get(todo.id)
     if (!win || win.isDestroyed()) continue
+    if (pinnedNoteDragState.has(win.webContents.id)) continue
     const col = Math.floor(i / perColumn)
     const row = i % perColumn
     const x = Math.max(
@@ -412,6 +435,7 @@ function syncPinnedTodoWindows(): void {
 }
 
 function createWindow(): void {
+  migrateSettingsIfNeeded()
   const settings = readSettings()
   const ballPos = initialBallFromSettings(settings)
   /** 默认不置顶；仅当用户在设置中明确保存为 true 时才置顶 */
@@ -646,14 +670,14 @@ app.whenReady().then(() => {
       const dy = Math.round(cursorScreenY) - state.startCursorScreenY
       const nextX = state.startWindowX + dx
       const nextY = state.startWindowY + dy
-      const size = win.getSize()
+      const w = NOTE_WIDTH
+      const h = NOTE_HEIGHT
       const { workArea } = screen.getDisplayMatching(win.getBounds())
-      const maxX = workArea.x + workArea.width - size[0]
-      const maxY = workArea.y + workArea.height - size[1]
-      win.setPosition(
-        Math.max(workArea.x, Math.min(nextX, maxX)),
-        Math.max(workArea.y, Math.min(nextY, maxY))
-      )
+      const maxX = workArea.x + workArea.width - w
+      const maxY = workArea.y + workArea.height - h
+      const x = Math.max(workArea.x, Math.min(nextX, maxX))
+      const y = Math.max(workArea.y, Math.min(nextY, maxY))
+      win.setBounds({ x, y, width: w, height: h })
     }
   )
 
