@@ -13,6 +13,11 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    # 在 job 级别暴露 token，供后续所有 step 使用（electron-builder / gh CLI / 上传都能读取）
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,7 +25,9 @@ jobs:
         id: meta
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          # 确保 gh CLI 能认证；使用 secrets.GITHUB_TOKEN 而不是不存在的 github.token
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="v${VERSION}"
@@ -47,6 +54,9 @@ jobs:
         if: steps.meta.outputs.release_exists == 'false'
         run: npm run build
         env:
+          # job 级别已设置 GH_TOKEN/GITHUB_TOKEN，上面这行可选但更显式
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
       - name: Create GitHub Release with artifacts
