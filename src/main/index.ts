@@ -57,6 +57,7 @@ const pinnedNoteDragState = new Map<
     startCursorScreenY: number
     startWindowX: number
     startWindowY: number
+    startWindowWidth: number
   }
 >()
 const NOTE_MIN_WIDTH = 72
@@ -726,11 +727,13 @@ app.whenReady().then(() => {
         return
       }
       const [x, y] = win.getPosition()
+      const width = win.getBounds().width
       pinnedNoteDragState.set(event.sender.id, {
         startCursorScreenX: Math.round(cursorScreenX),
         startCursorScreenY: Math.round(cursorScreenY),
         startWindowX: x,
-        startWindowY: y
+        startWindowY: y,
+        startWindowWidth: width
       })
     }
   )
@@ -751,7 +754,7 @@ app.whenReady().then(() => {
       const dy = Math.round(cursorScreenY) - state.startCursorScreenY
       const nextX = state.startWindowX + dx
       const nextY = state.startWindowY + dy
-      const w = win.getBounds().width
+      const w = state.startWindowWidth
       const h = NOTE_HEIGHT
       const { workArea } = screen.getDisplayMatching(win.getBounds())
       const maxX = workArea.x + workArea.width - w
@@ -769,6 +772,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('pinned-note-set-measured-width', (event, raw: unknown) => {
     if (typeof raw !== 'number' || !Number.isFinite(raw)) return
+    if (pinnedNoteDragState.has(event.sender.id)) return
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win || win.isDestroyed()) return
     const tid = todoIdFromPinnedNoteWindow(win)
