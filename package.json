@@ -1,6 +1,6 @@
 {
   "name": "nate-todo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Windows 侧边悬浮球待办",
   "author": "NateTodo",
   "engines": {
