@@ -19,6 +19,18 @@ const inputNew = document.getElementById('input-new') as HTMLInputElement
 const btnAdd = document.getElementById('btn-add')!
 const btnPin = document.getElementById('btn-pin')!
 const btnCollapse = document.getElementById('btn-collapse')!
+const chkLaunchAtLogin = document.getElementById(
+  'chk-launch-at-login'
+) as HTMLInputElement
+const btnSettings = document.getElementById('btn-settings')!
+const settingsMenu = document.getElementById('settings-menu')!
+const settingsAnchor = document.getElementById('settings-anchor')!
+
+function setSettingsOpen(open: boolean): void {
+  settingsMenu.classList.toggle('hidden', !open)
+  btnSettings.setAttribute('aria-expanded', String(open))
+  btnSettings.classList.toggle('is-open', open)
+}
 
 let todos: TodoItem[] = []
 let currentPage = 1
@@ -65,6 +77,7 @@ function updateBadge(): void {
 
 function applyMode(mode: 'ball' | 'panel'): void {
   if (mode === 'ball') {
+    setSettingsOpen(false)
     ballRoot.classList.remove('hidden')
     panelRoot.classList.add('hidden')
   } else {
@@ -260,6 +273,31 @@ function wirePanel(): void {
       submitNew()
     }
   })
+
+  chkLaunchAtLogin.addEventListener('change', () => {
+    void window.nateTodo.setLaunchAtLogin(chkLaunchAtLogin.checked)
+  })
+
+  btnSettings.addEventListener('click', (e) => {
+    e.stopPropagation()
+    setSettingsOpen(settingsMenu.classList.contains('hidden'))
+  })
+
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (settingsMenu.classList.contains('hidden')) return
+      const t = e.target as Node
+      if (settingsAnchor.contains(t)) return
+      setSettingsOpen(false)
+    },
+    true
+  )
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return
+    if (!settingsMenu.classList.contains('hidden')) setSettingsOpen(false)
+  })
 }
 
 async function bootstrap(): Promise<void> {
@@ -277,9 +315,14 @@ async function bootstrap(): Promise<void> {
     syncPinButton(enabled)
   })
 
+  window.nateTodo.onLaunchAtLogin((enabled) => {
+    chkLaunchAtLogin.checked = enabled
+  })
+
   const mode = await window.nateTodo.getWindowMode()
   applyMode(mode)
   syncPinButton(await window.nateTodo.getNotesPinEnabled())
+  chkLaunchAtLogin.checked = await window.nateTodo.getLaunchAtLogin()
   await refreshTodos()
 }
 

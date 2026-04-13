@@ -21,12 +21,15 @@ declare global {
       persistBallPosition: () => Promise<void>
       getNotesPinEnabled: () => Promise<boolean>
       setNotesPinEnabled: (enabled: boolean) => Promise<void>
+      getLaunchAtLogin: () => Promise<boolean>
+      setLaunchAtLogin: (enabled: boolean) => Promise<void>
       getAlwaysOnTopPinned: () => Promise<boolean>
       setAlwaysOnTopPinned: (pinned: boolean) => Promise<void>
       onWindowMode: (callback: (mode: 'ball' | 'panel') => void) => void
       onAlwaysOnTopPinned: (callback: (pinned: boolean) => void) => void
       onPinnedNoteRefresh: (callback: (todo: TodoItem) => void) => void
       onNotesPinEnabled: (callback: (enabled: boolean) => void) => void
+      onLaunchAtLogin: (callback: (enabled: boolean) => void) => void
     }
   }
 }
