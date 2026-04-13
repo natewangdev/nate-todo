@@ -9,6 +9,8 @@ interface AppSettings {
   ballY?: number
   alwaysOnTopPinned?: boolean
   notesPinEnabled?: boolean
+  /** 是否注册为登录项（开机启动）；开发模式仅写入配置，不写入系统 */
+  launchAtLogin?: boolean
   /** 用于一次性迁移；缺省视为 1 */
   settingsVersion?: number
 }
@@ -39,6 +41,7 @@ let windowMode: 'ball' | 'panel' = 'ball'
 let storedBallPosition: { x: number; y: number } | null = null
 let alwaysOnTopPinned = false
 let notesPinEnabled = false
+let launchAtLoginEnabled = false
 let blurCollapseTimer: ReturnType<typeof setTimeout> | null = null
 const pinnedTodoWindows = new Map<string, BrowserWindow>()
 const dismissedPinnedTodoIds = new Set<string>()
@@ -269,6 +272,18 @@ function initialBallFromSettings(settings: AppSettings): { x: number; y: number 
     return clampBallPos(def.x, settings.ballY)
   }
   return def
+}
+
+function applyLaunchAtLoginToSystem(openAtLogin: boolean): void {
+  if (!app.isPackaged) return
+  try {
+    app.setLoginItemSettings({
+      openAtLogin,
+      path: app.getPath('exe')
+    })
+  } catch {
+    /* ignore */
+  }
 }
 
 function applyPanelLayout(): void {
@@ -522,6 +537,8 @@ function createWindow(): void {
   /** 默认不置顶；仅当用户在设置中明确保存为 true 时才置顶 */
   alwaysOnTopPinned = settings.alwaysOnTopPinned === true
   notesPinEnabled = settings.notesPinEnabled === true
+  launchAtLoginEnabled = settings.launchAtLogin === true
+  applyLaunchAtLoginToSystem(launchAtLoginEnabled)
 
   mainWindow = new BrowserWindow({
     title: '',
@@ -604,6 +621,7 @@ function createWindow(): void {
     mainWindow?.webContents.send('window-mode', windowMode)
     mainWindow?.webContents.send('always-on-top-pinned', alwaysOnTopPinned)
     mainWindow?.webContents.send('notes-pin-enabled', notesPinEnabled)
+    mainWindow?.webContents.send('launch-at-login', launchAtLoginEnabled)
   })
 }
 
@@ -791,6 +809,16 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('get-notes-pin-enabled', () => notesPinEnabled)
+
+  ipcMain.handle('get-launch-at-login', () => launchAtLoginEnabled)
+
+  ipcMain.handle('set-launch-at-login', (_, enabled: unknown) => {
+    if (typeof enabled !== 'boolean') return
+    launchAtLoginEnabled = enabled
+    writeSettings({ launchAtLogin: enabled })
+    applyLaunchAtLoginToSystem(enabled)
+    mainWindow?.webContents.send('launch-at-login', enabled)
+  })
 
   ipcMain.handle('set-notes-pin-enabled', (_, enabled: unknown) => {
     if (typeof enabled !== 'boolean') return

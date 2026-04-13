@@ -35,6 +35,10 @@ contextBridge.exposeInMainWorld('nateTodo', {
     ipcRenderer.invoke('get-notes-pin-enabled'),
   setNotesPinEnabled: (enabled: boolean): Promise<void> =>
     ipcRenderer.invoke('set-notes-pin-enabled', enabled),
+  getLaunchAtLogin: (): Promise<boolean> =>
+    ipcRenderer.invoke('get-launch-at-login'),
+  setLaunchAtLogin: (enabled: boolean): Promise<void> =>
+    ipcRenderer.invoke('set-launch-at-login', enabled),
   getAlwaysOnTopPinned: (): Promise<boolean> =>
     ipcRenderer.invoke('get-always-on-top-pinned'),
   setAlwaysOnTopPinned: (pinned: boolean): Promise<void> =>
@@ -59,6 +63,11 @@ contextBridge.exposeInMainWorld('nateTodo', {
   },
   onNotesPinEnabled: (callback: (enabled: boolean) => void): void => {
     ipcRenderer.on('notes-pin-enabled', (_event, enabled: boolean) => {
+      callback(enabled)
+    })
+  },
+  onLaunchAtLogin: (callback: (enabled: boolean) => void): void => {
+    ipcRenderer.on('launch-at-login', (_event, enabled: boolean) => {
       callback(enabled)
     })
   }
