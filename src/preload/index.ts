@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('nateTodo', {
     ipcRenderer.invoke('todo-toggle', id),
   todoDelete: (id: string): Promise<TodoItem[]> =>
     ipcRenderer.invoke('todo-delete', id),
+  todoUpdateContent: (id: string, content: string): Promise<TodoItem[]> =>
+    ipcRenderer.invoke('todo-update-content', id, content),
   getTodoById: (id: string): Promise<TodoItem | null> =>
     ipcRenderer.invoke('get-todo-by-id', id),
   dismissPinnedNote: (id: string): Promise<void> =>

@@ -7,6 +7,7 @@ declare global {
       todoAdd: (content: string) => Promise<TodoItem[]>
       todoToggle: (id: string) => Promise<TodoItem[]>
       todoDelete: (id: string) => Promise<TodoItem[]>
+      todoUpdateContent: (id: string, content: string) => Promise<TodoItem[]>
       getTodoById: (id: string) => Promise<TodoItem | null>
       dismissPinnedNote: (id: string) => Promise<void>
       getWindowMode: () => Promise<'ball' | 'panel'>

@@ -34,6 +34,10 @@ function setSettingsOpen(open: boolean): void {
 
 let todos: TodoItem[] = []
 let currentPage = 1
+/** 正在行内编辑的待办 id；null 表示未在编辑 */
+let editingTodoId: string | null = null
+/** 避免 Escape / Enter 触发的 blur 与提交逻辑打架 */
+let skipEditBlur = false
 let ballDrag = false
 let ballStartClientX = 0
 let ballStartClientY = 0
@@ -62,6 +66,27 @@ function formatCreated(iso: string): string {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit'
+  })
+}
+
+function commitTodoEdit(id: string, raw: string): void {
+  const text = raw.trim()
+  if (!text) {
+    editingTodoId = null
+    renderList()
+    return
+  }
+  const prev = todos.find((t) => t.id === id)?.content
+  if (prev === text) {
+    editingTodoId = null
+    renderList()
+    return
+  }
+  void window.nateTodo.todoUpdateContent(id, text).then((list) => {
+    todos = list
+    editingTodoId = null
+    updateBadge()
+    renderList()
   })
 }
 
@@ -117,15 +142,59 @@ function renderList(): void {
     const body = document.createElement('div')
     body.className = 'todo-body'
 
-    const text = document.createElement('div')
-    text.className = 'todo-text'
-    text.textContent = item.content
+    if (item.id === editingTodoId) {
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.className = 'todo-text todo-text-input'
+      input.value = item.content
+      input.maxLength = 500
+      input.setAttribute('aria-label', '编辑待办内容，回车保存')
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          skipEditBlur = true
+          commitTodoEdit(item.id, input.value)
+        } else if (e.key === 'Escape') {
+          e.preventDefault()
+          skipEditBlur = true
+          editingTodoId = null
+          renderList()
+        }
+      })
+      input.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (skipEditBlur) {
+            skipEditBlur = false
+            return
+          }
+          if (editingTodoId !== item.id) return
+          commitTodoEdit(item.id, input.value)
+        }, 0)
+      })
+      requestAnimationFrame(() => {
+        input.focus()
+        input.select()
+      })
+      const meta = document.createElement('div')
+      meta.className = 'todo-meta'
+      meta.textContent = formatCreated(item.createdAt)
+      body.append(input, meta)
+    } else {
+      const text = document.createElement('div')
+      text.className = 'todo-text'
+      text.textContent = item.content
+      text.title = '双击修改'
+      text.addEventListener('dblclick', () => {
+        editingTodoId = item.id
+        renderList()
+      })
 
-    const meta = document.createElement('div')
-    meta.className = 'todo-meta'
-    meta.textContent = formatCreated(item.createdAt)
+      const meta = document.createElement('div')
+      meta.className = 'todo-meta'
+      meta.textContent = formatCreated(item.createdAt)
 
-    body.append(text, meta)
+      body.append(text, meta)
+    }
 
     const del = document.createElement('button')
     del.type = 'button'

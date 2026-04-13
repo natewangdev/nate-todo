@@ -625,7 +625,22 @@ function createWindow(): void {
   })
 }
 
-app.whenReady().then(() => {
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.show()
+      mainWindow.focus()
+    } else {
+      createWindow()
+    }
+  })
+
+  app.whenReady().then(() => {
   createWindow()
   syncPinnedTodoWindows()
 
@@ -666,6 +681,20 @@ app.whenReady().then(() => {
     saveTodos(list)
     dismissedPinnedTodoIds.delete(id)
     syncPinnedTodoWindows()
+    return list
+  })
+
+  ipcMain.handle('todo-update-content', (_, id: string, content: unknown) => {
+    if (typeof id !== 'string') return loadTodos()
+    const text = typeof content === 'string' ? content.trim() : ''
+    if (!text) return loadTodos()
+    const list = loadTodos()
+    const t = list.find((x) => x.id === id)
+    if (t) {
+      t.content = text
+      saveTodos(list)
+      syncPinnedTodoWindows()
+    }
     return list
   })
 
@@ -864,7 +893,8 @@ app.whenReady().then(() => {
       applyPanelLayout()
     }
   })
-})
+  })
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
